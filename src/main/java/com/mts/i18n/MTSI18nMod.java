@@ -1,4 +1,4 @@
-package com.mts.chinese;
+package com.mts.i18n;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -20,21 +20,21 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Mod("mts_chinese")
-public class MTSChineseMod {
+@Mod("mts_i18n")
+public class MTSI18nMod {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("MTSChinese");
+    private static final Logger LOGGER = LoggerFactory.getLogger("MTSI18n");
     private static final TranslationDict DICT = new TranslationDict();
     private static TranslationExtractor EXTRACTOR;
     private static String LANG_CODE = "zh_cn";
 
-    public MTSChineseMod() {
-        LOGGER.info("[MTSChinese] Constructor called");
+    public MTSI18nMod() {
+        LOGGER.info("[MTSI18n] Constructor called");
         NeoForge.EVENT_BUS.addListener(LateApplicator::onJoinWorld);
     }
 
     @SuppressWarnings("removal")
-    @EventBusSubscriber(modid = "mts_chinese", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = "mts_i18n", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ModBus {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
@@ -50,7 +50,7 @@ public class MTSChineseMod {
                     } catch (Exception e) {
                         // default to zh_cn
                     }
-                    LOGGER.info("[MTSChinese] detected game language: {}", LANG_CODE);
+                    LOGGER.info("[MTSI18n] detected game language: {}", LANG_CODE);
 
                     // Determine game directory from Minecraft's working dir
                     java.io.File gameDir = new java.io.File(".").getAbsoluteFile();
@@ -67,24 +67,24 @@ public class MTSChineseMod {
                     try {
                         int langEntries = EXTRACTOR.extractFromLanguageSystem();
                         if (langEntries > 0) {
-                            LOGGER.info("[MTSChinese] extract: added {} entries from MTS LanguageSystem", langEntries);
+                            LOGGER.info("[MTSI18n] extract: added {} entries from MTS LanguageSystem", langEntries);
                         }
                     } catch (Exception ex) {
-                        LOGGER.warn("[MTSChinese] extract: could not access LanguageSystem: {}", ex.getMessage());
+                        LOGGER.warn("[MTSI18n] extract: could not access LanguageSystem: {}", ex.getMessage());
                     }
 
                     // Load translations from generated files
                     Map<String, String> fileTrans = EXTRACTOR.loadUserTranslations();
                     if (!fileTrans.isEmpty()) {
                         DICT.addExactTranslations(fileTrans);
-                        LOGGER.info("[MTSChinese] loaded {} translations from files", fileTrans.size());
+                        LOGGER.info("[MTSI18n] loaded {} translations from files", fileTrans.size());
                     }
 
                     applyTranslations();
                 } catch (ClassNotFoundException e) {
-                    LOGGER.warn("[MTSChinese] MTS not installed, translation injection skipped");
+                    LOGGER.warn("[MTSI18n] MTS not installed, translation injection skipped");
                 } catch (Exception e) {
-                    LOGGER.error("[MTSChinese] Translation injection failed", e);
+                    LOGGER.error("[MTSI18n] Translation injection failed", e);
                 }
             });
         }
@@ -94,7 +94,7 @@ public class MTSChineseMod {
         public static void onJoinWorld(ClientPlayerNetworkEvent.LoggingIn event) {
             int n = injectItemDescriptions();
             if (n > 0) {
-                LOGGER.info("[MTSChinese] Late pass: translated {} item fields", n);
+                LOGGER.info("[MTSI18n] Late pass: translated {} item fields", n);
             }
         }
     }
@@ -113,7 +113,7 @@ public class MTSChineseMod {
             (Map<String, Map<String, Object>>) packLangField.get(null);
 
         if (packEntries == null) {
-            LOGGER.warn("[MTSChinese] packLanguageEntries is null, packs may not have loaded yet");
+            LOGGER.warn("[MTSI18n] packLanguageEntries is null, packs may not have loaded yet");
             return;
         }
 
@@ -173,29 +173,29 @@ public class MTSChineseMod {
             debugKeys = false;
         }
 
-        LOGGER.info("[MTSChinese] LanguageEntry value keys found: {}", allLangKeys);
-        LOGGER.info("[MTSChinese] Names: {}/{} translated", translatedNames, totalNames);
-        LOGGER.info("[MTSChinese] Descriptions: {}/{} translated (exact only)", translatedDescs, totalDescs);
-        LOGGER.info("[MTSChinese] Exact matches: {} Word replaced: {} Not translated: {}",
+        LOGGER.info("[MTSI18n] LanguageEntry value keys found: {}", allLangKeys);
+        LOGGER.info("[MTSI18n] Names: {}/{} translated", translatedNames, totalNames);
+        LOGGER.info("[MTSI18n] Descriptions: {}/{} translated (exact only)", translatedDescs, totalDescs);
+        LOGGER.info("[MTSI18n] Exact matches: {} Word replaced: {} Not translated: {}",
             DICT.getExactHits(), DICT.getWordHits(), DICT.getNoMatch());
 
         if (!unmatchedDescs.isEmpty()) {
-            LOGGER.info("[MTSChinese] --- Unmatched descriptions ({}) ---", unmatchedDescs.size());
+            LOGGER.info("[MTSI18n] --- Unmatched descriptions ({}) ---", unmatchedDescs.size());
             for (Map.Entry<String, String> ue : unmatchedDescs.entrySet()) {
-                LOGGER.info("[MTSChinese]   [{}] {}", ue.getValue(), ue.getKey().substring(0, Math.min(120, ue.getKey().length())));
+                LOGGER.info("[MTSI18n]   [{}] {}", ue.getValue(), ue.getKey().substring(0, Math.min(120, ue.getKey().length())));
             }
         }
 
         Set<String> untranslated = DICT.getUntranslated();
         if (!untranslated.isEmpty()) {
-            LOGGER.info("[MTSChinese] --- Untranslated entries (consider adding to dict) ---");
+            LOGGER.info("[MTSI18n] --- Untranslated entries (consider adding to dict) ---");
             int shown = 0;
             for (String s : untranslated) {
                 if (shown >= 1000) {
-                    LOGGER.info("[MTSChinese] ... and {} more", untranslated.size() - 1000);
+                    LOGGER.info("[MTSI18n] ... and {} more", untranslated.size() - 1000);
                     break;
                 }
-                LOGGER.info("[MTSChinese]   UNTRANSLATED: {}", s);
+                LOGGER.info("[MTSI18n]   UNTRANSLATED: {}", s);
                 shown++;
             }
         }
@@ -283,11 +283,11 @@ public class MTSChineseMod {
                 }
             }
             if (translated > 0) {
-                LOGGER.info("[MTSChinese]   injected {} new descriptions from General.description", translated);
+                LOGGER.info("[MTSI18n]   injected {} new descriptions from General.description", translated);
             }
             return translated;
         } catch (Exception e) {
-            LOGGER.warn("[MTSChinese] injectItemDescriptions error: {}", e.getMessage());
+            LOGGER.warn("[MTSI18n] injectItemDescriptions error: {}", e.getMessage());
             return -1;
         }
     }

@@ -1,4 +1,4 @@
-package com.mts.chinese;
+package com.mts.i18n;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -29,18 +29,18 @@ import org.slf4j.LoggerFactory;
 
 public class TranslationExtractor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("MTSChinese");
+    private static final Logger LOGGER = LoggerFactory.getLogger("MTSI18n");
 
     private final File translationsDir;
-    private final File mtsChineseDir;
+    private final File mtsI18nDir;
     private String langCode = "zh_cn";
     private Map<String, String> zipTranslations = new LinkedHashMap<>();
     private Map<String, String> loadedFromZip = new LinkedHashMap<>();
     private Set<String> coveredKeys = new HashSet<>();
 
     public TranslationExtractor(File gameDir) {
-        this.mtsChineseDir = new File(gameDir, "mts_chinese");
-        this.translationsDir = new File(mtsChineseDir, "translations");
+        this.mtsI18nDir = new File(gameDir, "mts_i18n");
+        this.translationsDir = new File(mtsI18nDir, "translations");
     }
 
     public void setLangCode(String code) {
@@ -52,13 +52,13 @@ public class TranslationExtractor {
         loadedFromZip.clear();
         zipTranslations.clear();
         coveredKeys.clear();
-        if (!mtsChineseDir.isDirectory()) return;
+        if (!mtsI18nDir.isDirectory()) return;
 
         Gson gson = new Gson();
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         Pattern langZipPattern = Pattern.compile("^([a-z]{2}_[a-z]{2})\\.zip$");
 
-        for (File f : mtsChineseDir.listFiles()) {
+        for (File f : mtsI18nDir.listFiles()) {
             if (!f.isFile()) continue;
             String name = f.getName().toLowerCase();
             if (!name.endsWith(".zip") && !name.endsWith(".jar")) continue;
@@ -94,9 +94,9 @@ public class TranslationExtractor {
                     }
                 }
                 String label = isMatchingLang ? " (active lang)" : isForeignLang ? " (foreign lang)" : "";
-                LOGGER.info("[MTSChinese] zip: loaded {} entries from {}{}", loadedFromZip.size(), f.getName(), label);
+                LOGGER.info("[MTSI18n] zip: loaded {} entries from {}{}", loadedFromZip.size(), f.getName(), label);
             } catch (Exception ex) {
-                LOGGER.warn("[MTSChinese] zip: error reading {}: {}", f.getName(), ex.getMessage());
+                LOGGER.warn("[MTSI18n] zip: error reading {}: {}", f.getName(), ex.getMessage());
             }
         }
     }
@@ -109,7 +109,7 @@ public class TranslationExtractor {
     public void run() {
         File modsDir = new File(translationsDir.getParentFile().getParentFile(), "mods");
         if (!modsDir.isDirectory()) {
-            LOGGER.info("[MTSChinese] extract: mods folder not found at {}", modsDir);
+            LOGGER.info("[MTSI18n] extract: mods folder not found at {}", modsDir);
             return;
         }
 
@@ -179,7 +179,7 @@ public class TranslationExtractor {
             }
 
         } catch (IOException e) {
-            LOGGER.warn("[MTSChinese] extract: error reading {}: {}", jarFile.getName(), e.getMessage());
+            LOGGER.warn("[MTSI18n] extract: error reading {}: {}", jarFile.getName(), e.getMessage());
         }
 
         // Write/merge one file per pack
@@ -199,7 +199,7 @@ public class TranslationExtractor {
                     Map<String, String> existing = gson.fromJson(r, mapType);
                     if (existing != null) merged.putAll(existing);
                 } catch (Exception ex) {
-                    LOGGER.warn("[MTSChinese] extract: error reading existing {}: {}", outFile.getName(), ex.getMessage());
+                    LOGGER.warn("[MTSI18n] extract: error reading existing {}: {}", outFile.getName(), ex.getMessage());
                 }
             }
 
@@ -215,9 +215,9 @@ public class TranslationExtractor {
 
             try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(outFile), StandardCharsets.UTF_8)) {
                 gson.toJson(merged, w);
-                LOGGER.info("[MTSChinese] extract: {} - {} total ({} new)", packId, merged.size(), newAdded);
+                LOGGER.info("[MTSI18n] extract: {} - {} total ({} new)", packId, merged.size(), newAdded);
             } catch (IOException ex) {
-                LOGGER.warn("[MTSChinese] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
+                LOGGER.warn("[MTSI18n] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
             }
         }
     }
@@ -278,7 +278,7 @@ public class TranslationExtractor {
                 }
             }
         } catch (IOException e) {
-            LOGGER.warn("[MTSChinese] extract: error reading {}: {}", jarFile.getName(), e.getMessage());
+            LOGGER.warn("[MTSI18n] extract: error reading {}: {}", jarFile.getName(), e.getMessage());
         }
 
         // Write/merge per-pack
@@ -295,7 +295,7 @@ public class TranslationExtractor {
                     Map<String, String> existing = gson.fromJson(r, mapType);
                     if (existing != null) merged.putAll(existing);
                 } catch (Exception ex) {
-                    LOGGER.warn("[MTSChinese] extract: error reading {}: {}", outFile.getName(), ex.getMessage());
+                    LOGGER.warn("[MTSI18n] extract: error reading {}: {}", outFile.getName(), ex.getMessage());
                 }
             }
 
@@ -310,9 +310,9 @@ public class TranslationExtractor {
 
             try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(outFile), StandardCharsets.UTF_8)) {
                 gson.toJson(merged, w);
-                LOGGER.info("[MTSChinese] extract(lang): {} + {} entries", packId, newAdded);
+                LOGGER.info("[MTSI18n] extract(lang): {} + {} entries", packId, newAdded);
             } catch (IOException ex) {
-                LOGGER.warn("[MTSChinese] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
+                LOGGER.warn("[MTSI18n] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
             }
         }
     }
@@ -403,9 +403,9 @@ public class TranslationExtractor {
             if (newCount > 0) {
                 try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(outFile), StandardCharsets.UTF_8)) {
                     gson.toJson(merged, w);
-                    LOGGER.info("[MTSChinese] extract(LS): {} + {} entries", packId, newCount);
+                    LOGGER.info("[MTSI18n] extract(LS): {} + {} entries", packId, newCount);
                 } catch (IOException ex) {
-                    LOGGER.warn("[MTSChinese] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
+                    LOGGER.warn("[MTSI18n] extract: error writing {}: {}", outFile.getName(), ex.getMessage());
                 }
                 totalNew += newCount;
             }
@@ -438,11 +438,11 @@ public class TranslationExtractor {
                         }
                     }
                     if (loaded > 0) {
-                        LOGGER.info("[MTSChinese] extract: loaded {} translations from {}", loaded, f.getName());
+                        LOGGER.info("[MTSI18n] extract: loaded {} translations from {}", loaded, f.getName());
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warn("[MTSChinese] extract: error reading {}: {}", f.getName(), e.getMessage());
+                LOGGER.warn("[MTSI18n] extract: error reading {}: {}", f.getName(), e.getMessage());
             }
         }
         return result;

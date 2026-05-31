@@ -1,17 +1,17 @@
-# MTS/IV Chinese Translation Mod
+# MTS/IV I18N
 
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1.232-blue)](https://neoforged.net/)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)](https://minecraft.net/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-Automatic runtime translation injector for **Immersive Vehicles (MTS)** and its addon content packs.  
+Runtime internationalization (i18n) injector for **Immersive Vehicles (MTS/IV)** and its addon content packs.  
 Supports **multi-language packs** — translations are automatically selected based on the player's game language.
 
 ## Features
 
-- **Full Chinese translation** for 25+ MTS content packs (~16200 entries, 100% complete)
+- **Full Chinese translation** built-in for 25+ MTS content packs (~16200 entries, 100% complete)
+- **Multi-language support** — place `zh_cn.zip`, `de_de.zip`, etc. in `mts_i18n/` and the mod auto-selects by game locale
 - **Runtime injection** — no resource pack needed, works via reflection into MTS `LanguageSystem`
-- **Multi-language support** — place `zh_cn.zip`, `de_de.zip`, etc. in `mts_chinese/` and the mod auto-selects by game locale
 - **Auto-extraction** — scans content pack JARs on first run to generate translation template files
 - **Item name word replacement** — built-in dictionary (e.g. `Heavy Machine Gun` → `重机枪`)
 - **Exact description matching** — full sentence translations for item tooltips
@@ -20,8 +20,8 @@ Supports **multi-language packs** — translations are automatically selected ba
 
 1. At client startup, the mod scans `/mods` for MTS content pack JARs
 2. Extracts English item names and descriptions from `jsondefs/` and `language/en_us.json`
-3. Generates translation JSON files in `mts_chinese/translations/`
-4. Loads your translations from those files
+3. Generates translation JSON files in `mts_i18n/translations/`
+4. Loads translations from those files and any matching language pack
 5. At runtime, injects translations into MTS's `LanguageSystem` via reflection
 6. Also injects item descriptions when joining a world (late pass)
 
@@ -29,16 +29,15 @@ Supports **multi-language packs** — translations are automatically selected ba
 
 1. Install [NeoForge](https://neoforged.net/) 21.1.232 for Minecraft 1.21.1
 2. Install [Immersive Vehicles (MTS)](https://www.curseforge.com/minecraft/mc-mods/mts-immersive-vehicles) V24+
-3. Place this mod (`mts_chinese-1.0.0.jar`) in your `mods/` folder
-4. Set your game language to 简体中文 (Simplified Chinese)
-5. Launch the game — translations are applied automatically
+3. Place `mts_i18n-1.0.0.jar` in your `mods/` folder
+4. Launch the game — translations are applied automatically based on your game language
 
 ## Translation Files
 
-Generated automatically at: `[game_dir]/mts_chinese/translations/`
+Generated automatically at: `[game_dir]/mts_i18n/translations/`
 
 ```
-mts_chinese/
+mts_i18n/
 ├── zh_cn.zip              → Language pack for Chinese (auto-detected)
 ├── de_de.zip              → Language pack for German
 ├── translations/
@@ -69,7 +68,7 @@ mts_chinese/
 
 ### Multi-language packs
 
-Place language-specific zip files in the `mts_chinese/` directory:
+Place language-specific zip files in the `mts_i18n/` directory:
 - `zh_cn.zip` — loaded when game language is 简体中文
 - `de_de.zip` — loaded when game language is Deutsch
 - `ja_jp.zip` — loaded when game language is 日本語
@@ -102,8 +101,8 @@ The mod automatically selects the matching pack at startup.
 
 ```bash
 # Clone the repo
-git clone https://github.com/pihoue/mts-chinese-translation.git
-cd mts-chinese-translation
+git clone https://github.com/pihoue/mts-i18n.git
+cd mts-i18n
 
 # Build
 ./gradlew build
@@ -116,8 +115,8 @@ cd mts-chinese-translation
 ### Architecture
 
 ```
-src/main/java/com/mts/chinese/
-├── MTSChineseMod.java       # @Mod entry point, translation injection
+src/main/java/com/mts/i18n/
+├── MTSI18nMod.java          # @Mod entry point, translation injection
 ├── TranslationDict.java     # Dictionary engine (exact + word replacement)
 ├── TranslationExtractor.java # JAR scanning, file generation, zip loading
 ```
@@ -132,10 +131,10 @@ Start → loadZipPack() → run() [scan JARs → generate files]
 → World Load → injectItemDescriptions() [late pass for AItemPack]
 ```
 
-### Multi-language Detection
+### Language Detection
 
 Language is auto-detected from `Minecraft.options.languageCode` at startup.  
-All `values.put("zh_cn", ...)` calls use the detected language code instead of hardcoded values.
+Injection target (`values[lang_code]`) is dynamic based on the detected language.
 
 ## License
 
@@ -144,5 +143,5 @@ MIT License — feel free to use, modify, and distribute.
 ## Credits
 
 - [Don_bruce](https://www.curseforge.com/minecraft/mc-mods/mts-immersive-vehicles) — Immersive Vehicles (MTS)
-- MTS Chinese Translation Team
+- MTS I18N Team
 - All contributors

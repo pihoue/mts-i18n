@@ -8,15 +8,15 @@ Minecraft 沉浸车辆 (Immersive Vehicles / MTS) 的中文翻译 NeoForge 模�
 
 ```
 src/main/java/com/mts/chinese/
-├── MTSChineseMod.java          # @Mod 入口 + applyTranslations() + injectItemDescriptions()
+├── MTSI18nMod.java          # @Mod 入口 + applyTranslations() + injectItemDescriptions()
 ├── TranslationDict.java        # 词典引擎：exactMap + wordMap + simpleMap + normalize()
 ├── TranslationExtractor.java   # 扫描JAR + 提取 + 合并 + 加载用户翻译
 
-src/main/resources/assets/mts_chinese/lang/
+src/main/resources/assets/mts_i18n/lang/
 └── (translations.json 已删除，翻译全部从文件加载)
 
-run/mts_chinese/translations/   # 25 个文件，~12400 条目（含新增约2675条，约78%已翻译）
-run/mts_chinese/                # 用户放置 .zip/.jar 翻译包（不限文件名）
+run/mts_i18n/translations/   # 25 个文件，~12400 条目（含新增约2675条，约78%已翻译）
+run/mts_i18n/                # 用户放置 .zip/.jar 翻译包（不限文件名）
 ```
 
 ## 核心流程
@@ -134,12 +134,12 @@ run/mts_chinese/                # 用户放置 .zip/.jar 翻译包（不限文�
 
 ## 多语言翻译包支持（2025-05-31）
 
-mts_chinese/ 目录现在支持放置多个语言翻译 zip 包，模组自动根据玩家游戏语言选择对应包。
+mts_i18n/ 目录现在支持放置多个语言翻译 zip 包，模组自动根据玩家游戏语言选择对应包。
 
 ### 命名约定
 
 ```
-mts_chinese/
+mts_i18n/
 ├── zh_cn.zip          → 简体中文（自动匹配游戏语言=zh_cn）
 ├── de_de.zip          → 德语
 ├── ja_jp.zip          → 日语
@@ -163,7 +163,7 @@ mts_chinese/
 ### 代码位置
 
 - `TranslationExtractor.loadZipPack()` — 语言感知的 zip 过滤
-- `MTSChineseMod.LANG_CODE` — 运行时检测的游戏语言码
+- `MTSI18nMod.LANG_CODE` — 运行时检测的游戏语言码
 - `applyTranslations()` / `injectItemDescriptions()` — 使用 `LANG_CODE` 而非硬编码 `"zh_cn"`
 
 ## 后续建议

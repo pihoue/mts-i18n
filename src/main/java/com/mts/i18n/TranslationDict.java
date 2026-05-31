@@ -1,4 +1,4 @@
-package com.mts.chinese;
+package com.mts.i18n;
 
 import java.text.Normalizer;
 import java.util.LinkedHashMap;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class TranslationDict {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("MTSChinese");
+    private static final Logger LOGGER = LoggerFactory.getLogger("MTSI18n");
 
     private final Map<String, String> exactMap = new LinkedHashMap<>();
     private final Map<String, String> wordMap;

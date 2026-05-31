@@ -74,27 +74,27 @@ side = "BOTH"
 #[features."${mod_id}"]
 #openGLVersion="[3.2,)"
 
-# MTS Chinese Translation Mod
+# MTS I18N Translation Mod
 [[mods]]
-modId = "mts_chinese"
+modId = "mts_i18n"
 version = "${mod_version}"
-displayName = "MTS/IV Chinese Translation"
-authors = ["MTS Chinese Team"]
-description = "Automatically provides Chinese translations for all MTS/IV content packs"
+displayName = "MTS/IV I18N"
+authors = ["MTS I18N Team"]
+description = "Provides runtime internationalization (i18n) for MTS/IV content packs with multi-language pack support."
 
-[[dependencies.mts_chinese]]
+[[dependencies.mts_i18n]]
     modId = "mts"
     type = "optional"
     ordering = "AFTER"
     versionRange = "[24.0.0,)"
 
-[[dependencies.mts_chinese]]
+[[dependencies.mts_i18n]]
     modId = "neoforge"
     type = "required"
     ordering = "NONE"
     versionRange = "${neo_version_range}"
 
-[[dependencies.mts_chinese]]
+[[dependencies.mts_i18n]]
     modId = "minecraft"
     type = "required"
     versionRange = "${minecraft_version_range}"
