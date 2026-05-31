@@ -102,7 +102,7 @@ The mod automatically selects the matching pack at startup.
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/mts-chinese-translation.git
+git clone https://github.com/pihoue/mts-chinese-translation.git
 cd mts-chinese-translation
 
 # Build
