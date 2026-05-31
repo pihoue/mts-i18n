@@ -84,9 +84,6 @@ neoForge {
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
-        "mts_i18n" {
-            sourceSet(sourceSets.main)
-        }
     }
 }
 

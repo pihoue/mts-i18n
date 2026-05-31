@@ -27,6 +27,7 @@ public class MTSI18nMod {
     private static final TranslationDict DICT = new TranslationDict();
     private static TranslationExtractor EXTRACTOR;
     private static String LANG_CODE = "zh_cn";
+    private static boolean mtsAvailable = true;
 
     public MTSI18nMod() {
         LOGGER.info("[MTSI18n] Constructor called");
@@ -70,7 +71,7 @@ public class MTSI18nMod {
                             LOGGER.info("[MTSI18n] extract: added {} entries from MTS LanguageSystem", langEntries);
                         }
                     } catch (Exception ex) {
-                        LOGGER.warn("[MTSI18n] extract: could not access LanguageSystem: {}", ex.getMessage());
+                        LOGGER.warn("[MTSI18n] extract: could not access LanguageSystem", ex);
                     }
 
                     // Load translations from generated files
@@ -92,6 +93,7 @@ public class MTSI18nMod {
 
     public static class LateApplicator {
         public static void onJoinWorld(ClientPlayerNetworkEvent.LoggingIn event) {
+            if (!mtsAvailable) return;
             int n = injectItemDescriptions();
             if (n > 0) {
                 LOGGER.info("[MTSI18n] Late pass: translated {} item fields", n);
@@ -126,6 +128,16 @@ public class MTSI18nMod {
         boolean debugKeys = true;
         Set<String> allLangKeys = new LinkedHashSet<>();
 
+        Field cachedValuesField = null;
+        try {
+            cachedValuesField = Class.forName(
+                "minecrafttransportsimulator.systems.LanguageSystem$LanguageEntry"
+            ).getDeclaredField("values");
+            cachedValuesField.setAccessible(true);
+        } catch (Exception ignored) {
+        }
+        final Field valuesFieldRef = cachedValuesField;
+
         for (String packID : packIDs) {
             Map<String, Object> packMap = packEntries.get(packID);
             if (packMap == null) continue;
@@ -136,8 +148,9 @@ public class MTSI18nMod {
                 if (langEntry == null) continue;
 
                 try {
-                    Field valuesField = langEntry.getClass().getDeclaredField("values");
-                    valuesField.setAccessible(true);
+                    Field valuesField = valuesFieldRef != null ? valuesFieldRef
+                        : langEntry.getClass().getDeclaredField("values");
+                    if (valuesFieldRef == null) valuesField.setAccessible(true);
                     Map<String, String> values = (Map<String, String>) valuesField.get(langEntry);
                     if (values == null) continue;
 
@@ -286,8 +299,12 @@ public class MTSI18nMod {
                 LOGGER.info("[MTSI18n]   injected {} new descriptions from General.description", translated);
             }
             return translated;
+        } catch (ClassNotFoundException e) {
+            mtsAvailable = false;
+            LOGGER.warn("[MTSI18n] MTS classes not found, late-join injection disabled");
+            return -1;
         } catch (Exception e) {
-            LOGGER.warn("[MTSI18n] injectItemDescriptions error: {}", e.getMessage());
+            LOGGER.warn("[MTSI18n] injectItemDescriptions error: {}", e.toString());
             return -1;
         }
     }

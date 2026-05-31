@@ -34,7 +34,6 @@ public class TranslationExtractor {
     private final File translationsDir;
     private final File mtsI18nDir;
     private String langCode = "zh_cn";
-    private Map<String, String> zipTranslations = new LinkedHashMap<>();
     private Map<String, String> loadedFromZip = new LinkedHashMap<>();
     private Set<String> coveredKeys = new HashSet<>();
 
@@ -50,7 +49,6 @@ public class TranslationExtractor {
     /** Load translations from zip/jar files in mts_chinese/ dir */
     public void loadZipPack() {
         loadedFromZip.clear();
-        zipTranslations.clear();
         coveredKeys.clear();
         if (!mtsI18nDir.isDirectory()) return;
 
@@ -83,10 +81,7 @@ public class TranslationExtractor {
                             String cleanKey = stripPrefix(e.getKey());
                             coveredKeys.add(e.getKey());
                             if (isMatchingLang || isGeneric) {
-                                String old = loadedFromZip.put(cleanKey, e.getValue());
-                                if (old == null) {
-                                    zipTranslations.put(e.getKey(), e.getValue());
-                                }
+                                loadedFromZip.putIfAbsent(cleanKey, e.getValue());
                             }
                         } else {
                             coveredKeys.add(e.getKey());
@@ -233,24 +228,19 @@ public class TranslationExtractor {
                 if (!ze.getName().contains("/language/")) continue;
                 // Only process English language files
                 String fname = ze.getName().substring(ze.getName().lastIndexOf('/') + 1);
-                if (!fname.equals("en_us.json") && !fname.equals("en_us.json")) continue;
+                if (!fname.equals("en_us.json")) continue;
 
                 try {
-                    String content = new String(zf.getInputStream(ze).readAllBytes(), "UTF-8");
-                    Gson g = new Gson();
+                    String content = new String(zf.getInputStream(ze).readAllBytes(), StandardCharsets.UTF_8);
                     Type t = new TypeToken<Map<String, String>>() {}.getType();
-                    Map<String, String> langEntries = g.fromJson(content, t);
+                    Map<String, String> langEntries = gson.fromJson(content, t);
                     if (langEntries == null) continue;
 
                     for (Map.Entry<String, String> le : langEntries.entrySet()) {
                         String key = le.getKey();
                         String val = le.getValue();
                         if (val == null || val.isEmpty()) continue;
-                        boolean hasChinese = false;
-                        for (int i = 0; i < val.length(); i++) {
-                            if (val.charAt(i) >= 0x4E00 && val.charAt(i) <= 0x9FFF) { hasChinese = true; break; }
-                        }
-                        if (hasChinese) continue;
+                        if (!isEnglishText(val)) continue;
 
                         int colon = key.indexOf(':');
                         if (colon < 0) continue;
@@ -353,11 +343,7 @@ public class TranslationExtractor {
 
                     String enValue = values.get("en_us");
                     if (enValue == null || enValue.isEmpty()) continue;
-                    boolean hasChinese = false;
-                    for (int i = 0; i < enValue.length(); i++) {
-                        if (enValue.charAt(i) >= 0x4E00 && enValue.charAt(i) <= 0x9FFF) { hasChinese = true; break; }
-                    }
-                    if (hasChinese) continue;
+                    if (!isEnglishText(enValue)) continue;
 
                     boolean isDesc = entryKey.contains(".description") || entryKey.contains(".desc")
                         || entryKey.contains(".info") || entryKey.contains(".tooltip");
@@ -463,21 +449,27 @@ public class TranslationExtractor {
 
     private static boolean isModelInternalName(String val) {
         if (val == null || val.isEmpty()) return false;
-        // OBJ/Blender internal node names like "obj4.005", "nohit.023", "mesh.001", "Cube.003"
         if (val.matches("^(?i)(obj|nohit|mesh|cube|hit)\\d*(\\.\\d+)?$")) return true;
-        // Blender deduplication suffix: names ending with ".001" ".002" etc.
-        // This catches "peterbilt_379h.001", "203mm.001", "fire_resistance.001"
         if (val.matches("^.+\\.\\d{3}$")) return true;
         return false;
     }
 
-    private static String keyType(String key) {
-        // Returns "name" or "desc" based on the key prefix
-        if (key.contains("] [name]")) return "name";
-        if (key.contains("] [desc]")) return "desc";
-        if (key.startsWith("[name]")) return "name";
-        if (key.startsWith("[desc]")) return "desc";
-        return "desc"; // default
+    /** Check if text is English (only ASCII / Latin characters, no CJK/Cyrillic/etc.). */
+    private static boolean isEnglishText(String text) {
+        if (text == null || text.isEmpty()) return true;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= 0x3400 && c <= 0x9FFF) return false;
+            if (c >= 0x3040 && c <= 0x30FF) return false;
+            if (c >= 0xAC00 && c <= 0xD7AF) return false;
+            if (c >= 0x0400 && c <= 0x04FF) return false;
+            if (c >= 0x0600 && c <= 0x06FF) return false;
+            if (c >= 0x0590 && c <= 0x05FF) return false;
+            if (c >= 0x0E00 && c <= 0x0E7F) return false;
+            if (c >= 0x0370 && c <= 0x03FF) return false;
+            if (c >= 0x0530 && c <= 0x058F) return false;
+        }
+        return true;
     }
 
     private boolean isIVContentPack(File jarFile) {
@@ -564,18 +556,11 @@ public class TranslationExtractor {
                             int[] valResult = parseString(json, pos);
                             String val = json.substring(valResult[0], valResult[1]);
                             pos = valResult[2];
-                            if (val.length() >= 2 && !isModelInternalName(val)) {
-                                boolean hasChinese = false;
-                                for (int i = 0; i < val.length(); i++) {
-                                    char ch = val.charAt(i);
-                                    if (ch >= 0x4E00 && ch <= 0x9FFF) { hasChinese = true; break; }
-                                }
-                                if (!hasChinese) {
-                                    String type = key.equals("name") ? "name" : "desc";
-                                    String displayKey = prefix + "[" + type + "]" + val;
-                                    if (!out.containsKey(displayKey)) {
-                                        out.put(displayKey, "");
-                                    }
+                            if (val.length() >= 2 && !isModelInternalName(val) && isEnglishText(val)) {
+                                String type = key.equals("name") ? "name" : "desc";
+                                String displayKey = prefix + "[" + type + "]" + val;
+                                if (!out.containsKey(displayKey)) {
+                                    out.put(displayKey, "");
                                 }
                             }
                         } else {

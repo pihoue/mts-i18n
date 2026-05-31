@@ -4,6 +4,7 @@ import java.text.Normalizer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,10 @@ import org.slf4j.LoggerFactory;
 public class TranslationDict {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("MTSI18n");
+
+    private static final Pattern COLOR_CODE = Pattern.compile("\u00a7[0-9a-fk-or]");
+    private static final Pattern SPECIAL_SPACE = Pattern.compile("[\\u00A0\\u00AE\\u2122\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000]");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     private final Map<String, String> exactMap = new LinkedHashMap<>();
 
@@ -23,12 +28,10 @@ public class TranslationDict {
 
     static String normalize(String s) {
         if (s == null) return "";
-        return Normalizer.normalize(
-            s.replaceAll("\u00a7[0-9a-fk-or]", "")
-                .replaceAll("[\\u00A0\\u00AE\\u2122\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000]", " ")
-                .replaceAll("\\s+", " "),
-            Normalizer.Form.NFKC
-        ).trim();
+        String result = COLOR_CODE.matcher(s).replaceAll("");
+        result = SPECIAL_SPACE.matcher(result).replaceAll(" ");
+        result = WHITESPACE.matcher(result).replaceAll(" ");
+        return Normalizer.normalize(result, Normalizer.Form.NFKC).trim();
     }
 
     public String translate(String name) {
