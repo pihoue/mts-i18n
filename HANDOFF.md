@@ -9,7 +9,7 @@ Minecraft 沉浸车辆 (Immersive Vehicles / MTS) 的运行时国际化 (i18n) N
 ```
 src/main/java/com/mts/chinese/
 ├── MTSI18nMod.java          # @Mod 入口 + applyTranslations() + injectItemDescriptions()
-├── TranslationDict.java        # 词典引擎：exactMap + wordMap + simpleMap + normalize()
+├── TranslationDict.java        # 词典引擎：exactMap + normalize()
 ├── TranslationExtractor.java   # 扫描JAR + 提取 + 合并 + 加载用户翻译
 
 src/main/resources/assets/mts_i18n/lang/
@@ -49,9 +49,7 @@ run/mts_i18n/                # 用户放置 .zip/.jar 翻译包（不限文件�
 ### TranslationDict.translate(name)
 1. `normalize()` → 去 `§` 颜色码 + NFKC 标准化 + 去空格 + trim
 2. `exactMap.get(clean)` → 命中返回
-3. `wordPattern` 替换 → `simplePattern` 替换
-4. 去中文字间空格 → 返回
-5. 都未命中 → `noMatch++`，记入 untranslated，返回原文
+3. 都未命中 → `noMatch++`，记入 untranslated，返回原文
 
 ### TranslationExtractor 三阶段
 1. `processJarJsondefs()` — 扫描 IV 附属包 JAR 的 `jsondefs/`，提取 `general.name` + `general.description`

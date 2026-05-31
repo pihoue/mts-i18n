@@ -9,6 +9,16 @@ Automatically translates item names, descriptions, and GUI text into the player'
 
 **No resource packs needed.** Translation is injected directly into MTS's `LanguageSystem` via reflection at runtime.
 
+## Why Not a Resource Pack?
+
+MTS (Immersive Vehicles) does **not** load item names and descriptions from standard Minecraft language files (`assets/*/lang/*.json`). Instead, it uses its own `LanguageSystem` which stores text in a custom in-memory data structure (`packLanguageEntries`). This means:
+
+- **Resource packs cannot override MTS text** — MTS ignores `en_us.json` from resource packs for its item definitions
+- **MTS reads text from `jsondefs/` inside JARs** — item names and descriptions are embedded in each content pack's JSON definition files
+- **The only way to localize MTS is at the Java level** — by accessing the `LanguageSystem` via reflection and injecting translated values at runtime
+
+This mod does exactly that: it reads MTS's internal language entries, looks up translations from its dictionary, and writes the localized text directly into the `values` map of each `LanguageEntry` — the same mechanism MTS itself uses internally.
+
 ## Features
 
 - **Full Chinese translation built-in** — 25+ content packs, ~16200 entries, 100% complete

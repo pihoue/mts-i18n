@@ -176,8 +176,8 @@ public class MTSI18nMod {
         LOGGER.info("[MTSI18n] LanguageEntry value keys found: {}", allLangKeys);
         LOGGER.info("[MTSI18n] Names: {}/{} translated", translatedNames, totalNames);
         LOGGER.info("[MTSI18n] Descriptions: {}/{} translated (exact only)", translatedDescs, totalDescs);
-        LOGGER.info("[MTSI18n] Exact matches: {} Word replaced: {} Not translated: {}",
-            DICT.getExactHits(), DICT.getWordHits(), DICT.getNoMatch());
+        LOGGER.info("[MTSI18n] Exact matches: {} Not translated: {}",
+            DICT.getExactHits(), DICT.getNoMatch());
 
         if (!unmatchedDescs.isEmpty()) {
             LOGGER.info("[MTSI18n] --- Unmatched descriptions ({}) ---", unmatchedDescs.size());
