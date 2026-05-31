@@ -5,25 +5,28 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 Runtime internationalization (i18n) injector for **Immersive Vehicles (MTS/IV)** and its addon content packs.  
-Supports **multi-language packs** — translations are automatically selected based on the player's game language.
+Automatically translates item names, descriptions, and GUI text into the player's selected game language.
+
+**No resource packs needed.** Translation is injected directly into MTS's `LanguageSystem` via reflection at runtime.
 
 ## Features
 
-- **Full Chinese translation** built-in for 25+ MTS content packs (~16200 entries, 100% complete)
-- **Multi-language support** — place `zh_cn.zip`, `de_de.zip`, etc. in `mts_i18n/` and the mod auto-selects by game locale
-- **Runtime injection** — no resource pack needed, works via reflection into MTS `LanguageSystem`
-- **Auto-extraction** — scans content pack JARs on first run to generate translation template files
-- **Item name word replacement** — built-in dictionary (e.g. `Heavy Machine Gun` → `重机枪`)
-- **Exact description matching** — full sentence translations for item tooltips
+- **Full Chinese translation built-in** — 25+ content packs, ~16200 entries, 100% complete
+- **Multi-language pack system** — place `zh_cn.zip`, `de_de.zip`, `ja_jp.zip`, etc. in `mts_i18n/` — the mod auto-selects by game locale
+- **Runtime injection** — modifies MTS `LanguageSystem` entries in memory, no pack reloading
+- **Auto-extraction** — scans content pack JARs on first launch, generates translation template files with all English source text
+- **Exact description matching** — full sentence-level translations for item tooltips
+- **Late-join injection** — translates item descriptions even when joining a world mid-session
 
 ## How It Works
 
 1. At client startup, the mod scans `/mods` for MTS content pack JARs
 2. Extracts English item names and descriptions from `jsondefs/` and `language/en_us.json`
-3. Generates translation JSON files in `mts_i18n/translations/`
-4. Loads translations from those files and any matching language pack
-5. At runtime, injects translations into MTS's `LanguageSystem` via reflection
-6. Also injects item descriptions when joining a world (late pass)
+3. Generates translation template files in `mts_i18n/translations/`
+4. Loads translations from those files and any matching language pack (`.zip`)
+5. Detects the game's current language from `Minecraft.options.languageCode`
+6. Injects translations into MTS's `LanguageSystem` — each entry gets the localized text as `values[lang_code]`
+7. Also injects item descriptions when joining a world (late pass for `AItemPack`)
 
 ## Installation
 
@@ -34,80 +37,75 @@ Supports **multi-language packs** — translations are automatically selected ba
 
 ## Translation Files
 
-Generated automatically at: `[game_dir]/mts_i18n/translations/`
+Generated and loaded from: `[game_dir]/mts_i18n/`
 
 ```
 mts_i18n/
-├── zh_cn.zip              → Language pack for Chinese (auto-detected)
-├── de_de.zip              → Language pack for German
-├── translations/
+├── zh_cn.zip              → Chinese pack (auto-loaded when game is 简体中文)
+├── de_de.zip              → German pack (auto-loaded when game is Deutsch)
+├── ja_jp.zip              → Japanese pack (auto-loaded when game is 日本語)
+├── translations/          → JSON template files (auto-generated, one per pack)
 │   ├── craftspeed.json
 │   ├── gvp.json
 │   ├── mtsofficialpack.json
 │   └── ... (25 files total)
 ```
 
-### Adding your own translations
+### Creating or editing translations
 
-1. Launch the game once to generate the JSON template files
-2. Open a `.json` file and fill in the empty values:
-```json
-{
-  "Original English text": "",
-  "Another description": ""
-}
-```
-3. Change to:
+1. Launch the game once to generate JSON template files with all English source text
+2. Fill in the empty values:
 ```json
 {
   "Original English text": "Your translation",
   "Another description": "Another translation"
 }
 ```
-4. Save and restart the game
+3. Save and restart the game
 
-### Multi-language packs
+### Language pack format (zip)
 
-Place language-specific zip files in the `mts_i18n/` directory:
-- `zh_cn.zip` — loaded when game language is 简体中文
-- `de_de.zip` — loaded when game language is Deutsch
-- `ja_jp.zip` — loaded when game language is 日本語
+Zip files contain `.json` files with the same key-value format as the template files.  
+Pack name follows the pattern `language_code.zip` (e.g., `de_de.zip`, `ja_jp.zip`).  
+Only the pack matching the player's game language is loaded into the active dictionary; other packs are still tracked to prevent duplicate generation.
 
-The mod automatically selects the matching pack at startup.
+### Adding a new language
 
-## Supported Content Packs
+1. Copy the generated `.json` files into a zip
+2. Rename it to your language code (e.g., `de_de.zip` for German)
+3. Place it in `mts_i18n/`
+4. Translate all empty values in the zip
+5. Players using that language will automatically get your translations
 
-| Pack | File | Entries |
-|------|------|---------|
-| MTS Official Pack | mtsofficialpack.json | 882 |
-| Craftspeed (Racing) | craftspeed.json | 7625 |
-| Craftspeed Wheels | craftspeedwheels.json | 1844 |
-| Craftspeed Parts | craftspeedparts.json | 335 |
-| GT CRAFT | gtcraft.json | 397 |
-| GT Craft Rims | gtcraft_rims.json | 372 |
-| GT Craft Interior | gtcraft_interior.json | 375 |
-| GT Craft Exterior | gtcraft_exterior.json | 33 |
-| GT Craft Bodykit | gtcraft_bodykit.json | 328 |
-| GT Craft Parts | gtcraft_parts.json | 164 |
-| Kaminari Motor Work (KMW) | gvp.json | 1944 |
-| Immersive Flight Simulator | ifs.json | 308 |
-| IV Airliner Pack | ivairlinerpack.json | 332 |
-| S.L.O.P. Vehicle Pack | ah1g / amx10p / amx13 / ... | 252 |
-| pgth | pgth.json | 15 |
-| MTS Core Handbook | mts.json | 131 |
-| **Total** | **25 files** | **~16200** |
+## Built-in Translations
+
+The mod ships with complete Chinese translations for the following content packs:
+
+| Pack | Entries |
+|------|---------|
+| MTS Official Pack | 882 |
+| Craftspeed (Racing) | 7625 |
+| Craftspeed Wheels | 1844 |
+| Craftspeed Parts | 335 |
+| GT CRAFT | 397 |
+| GT Craft Rims | 372 |
+| GT Craft Interior | 375 |
+| GT Craft Exterior / Bodykit / Parts | 525 |
+| Kaminari Motor Work (KMW) | 1944 |
+| Immersive Flight Simulator | 308 |
+| IV Airliner Pack | 332 |
+| S.L.O.P. Vehicle Pack (8 sub-packs) | 252 |
+| MTS Core Handbook | 131 |
+| PGTH | 15 |
+| **Total (25 files)** | **~16200** |
 
 ## Building from Source
 
 ```bash
-# Clone the repo
 git clone https://github.com/pihoue/mts-i18n.git
 cd mts-i18n
-
-# Build
 ./gradlew build
-
-# Output will be in build/libs/
+# Output: build/libs/mts_i18n-1.0.0.jar
 ```
 
 ## Technical Details
@@ -116,25 +114,33 @@ cd mts-i18n
 
 ```
 src/main/java/com/mts/i18n/
-├── MTSI18nMod.java          # @Mod entry point, translation injection
-├── TranslationDict.java     # Dictionary engine (exact + word replacement)
-├── TranslationExtractor.java # JAR scanning, file generation, zip loading
+├── MTSI18nMod.java           # @Mod entry, injection orchestration
+├── TranslationDict.java      # Translation dictionary (exact string matching)
+├── TranslationExtractor.java # JAR scanning, file generation, multi-zip loading
 ```
 
-### Injection Flow
+### Injection Pipeline
 
 ```
-Start → loadZipPack() → run() [scan JARs → generate files]
-→ extractFromLanguageSystem() [runtime MTS reflection]
-→ loadUserTranslations() → addExactTranslations()
-→ applyTranslations() [inject into LanguageSystem]
-→ World Load → injectItemDescriptions() [late pass for AItemPack]
+Start → loadZipPack()     [load matching language pack, mark coverage for others]
+     → run()              [scan JARs → generate translation template JSON files]
+     → extractFromLanguageSystem() [runtime MTS reflection to catch any missed items]
+     → loadUserTranslations()      [load all JSON files + active zip into dict]
+     → addExactTranslations()      [feed into TranslationDict]
+     → applyTranslations()         [inject translations into MTS LanguageSystem]
+     → World Join → injectItemDescriptions() [late pass for AItemPack fields]
 ```
 
 ### Language Detection
 
 Language is auto-detected from `Minecraft.options.languageCode` at startup.  
-Injection target (`values[lang_code]`) is dynamic based on the detected language.
+Injection target (`values[lang_code]`) is fully dynamic — the same mod binary supports any language.
+
+### Zip Coverage System
+
+When multiple language packs are present:
+- Only the pack matching the current game language is loaded into the active dictionary
+- All other packs are still scanned and their keys recorded as "covered" — preventing the auto-extractor from re-generating template entries for already-translated text
 
 ## License
 

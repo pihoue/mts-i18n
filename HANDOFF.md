@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-Minecraft 沉浸车辆 (Immersive Vehicles / MTS) 的中文翻译 NeoForge 模组。通过反射注入 `LanguageSystem.packLanguageEntries`，在运行时为每个 LanguageEntry 添加 `zh_cn` 值。
+Minecraft 沉浸车辆 (Immersive Vehicles / MTS) 的运行时国际化 (i18n) NeoForge 模组。通过反射注入 `LanguageSystem.packLanguageEntries`，在运行时为每个 LanguageEntry 添加对应游戏语言的翻译值。支持多语言翻译包，自动根据玩家游戏语言选择加载。
 
 ## 代码架构
 
