@@ -1,0 +1,40 @@
+# MacOS DS_Store files
+.DS_Store
+
+# Gradle cache folder
+.gradle
+
+# Gradle build folder
+build
+
+# IntelliJ
+out/
+.idea
+*.iml
+.idea_modules/
+
+# virtual machine crash logs
+hs_err_pid*
+
+# Common working directory
+run
+
+# Original template mod (not part of this project)
+src/main/java/qaq/
+src/main/resources/assets/untitled/
+src/main/resources/untitled.mixins.json
+
+# Analysis / extraction artifacts
+_extracted/
+untranslated_all.txt
+untranslated_final.txt
+untranslated_from_jars.txt
+
+# Playwright MCP
+.playwright-mcp/
+
+# AI config
+.ai/
+
+# Generated resources
+src/generated/resources/
