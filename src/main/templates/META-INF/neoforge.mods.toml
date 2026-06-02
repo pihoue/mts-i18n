@@ -78,4 +78,5 @@ side = "BOTH"
     modId = "mts"
     type = "optional"
     ordering = "AFTER"
+    # Supports IV 24.0.0 through 26.x (all MC 26.1 variants)
     versionRange = "[24.0.0,)"

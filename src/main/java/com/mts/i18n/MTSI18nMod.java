@@ -28,19 +28,86 @@ public class MTSI18nMod {
     private static TranslationExtractor EXTRACTOR;
     private static String LANG_CODE = "zh_cn";
     private static boolean mtsAvailable = true;
+    private static String ivVersion = "unknown";
+
+    /** Resolve a field by name, falling back to type-based search for cross-version compat. */
+    @SuppressWarnings("rawtypes")
+    private static Field resolveField(Class<?> clazz, String name, Class<?> fallbackType) {
+        try {
+            Field f = clazz.getDeclaredField(name);
+            f.setAccessible(true);
+            return f;
+        } catch (NoSuchFieldException e) {
+            if (fallbackType != null) {
+                for (Field f : clazz.getDeclaredFields()) {
+                    if (fallbackType.isAssignableFrom(f.getType())) {
+                        f.setAccessible(true);
+                        LOGGER.info("[MTSI18n] field fallback: {}->{} (type={})", name, f.getName(), fallbackType.getSimpleName());
+                        return f;
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    private static Class<?> tryLoadClass(String... names) {
+        for (String n : names) {
+            try { return Class.forName(n); } catch (ClassNotFoundException ignored) {}
+        }
+        return null;
+    }
+
+    private static Field tryField(Class<?> clazz, String... names) {
+        for (String n : names) {
+            try {
+                Field f = clazz.getDeclaredField(n);
+                f.setAccessible(true);
+                return f;
+            } catch (NoSuchFieldException ignored) {}
+        }
+        return null;
+    }
+
+    /** Detect IV version string from PackParser metadata at runtime. */
+    private static void detectIVVersion() {
+        try {
+            Class<?> packParserClass = Class.forName("minecrafttransportsimulator.packloading.PackParser");
+            Method getConfig = packParserClass.getMethod("getPackConfiguration", String.class);
+            Method getAllIDs = packParserClass.getMethod("getAllPackIDs");
+            Set<String> ids = (Set<String>) getAllIDs.invoke(null);
+            if (ids != null && !ids.isEmpty()) {
+                String firstId = ids.iterator().next();
+                Object config = getConfig.invoke(null, firstId);
+                if (config != null) {
+                    for (java.lang.reflect.Field f : config.getClass().getFields()) {
+                        if ("modVersion".equals(f.getName()) || "version".equals(f.getName())) {
+                            Object v = f.get(config);
+                            if (v != null) ivVersion = v.toString();
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // cannot determine
+        }
+        LOGGER.info("[MTSI18n] detected IV version: {}", ivVersion);
+    }
 
     public MTSI18nMod() {
         LOGGER.info("[MTSI18n] Constructor called");
         NeoForge.EVENT_BUS.addListener(LateApplicator::onJoinWorld);
     }
 
-    @SuppressWarnings("removal")
-    @EventBusSubscriber(modid = "mts_i18n", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = "mts_i18n", value = Dist.CLIENT)
     public static class ModBus {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 try {
+                    detectIVVersion();
+
                     // Detect current game language
                     try {
                         Minecraft mc = Minecraft.getInstance();
@@ -105,12 +172,17 @@ public class MTSI18nMod {
     public static void applyTranslations() throws Exception {
         Class<?> langSysClass = Class.forName("minecrafttransportsimulator.systems.LanguageSystem");
         Class<?> packParserClass = Class.forName("minecrafttransportsimulator.packloading.PackParser");
+        Class<?> langEntryClass = Class.forName("minecrafttransportsimulator.systems.LanguageSystem$LanguageEntry");
 
         Method getAllPackIDs = packParserClass.getMethod("getAllPackIDs");
         Set<String> packIDs = (Set<String>) getAllPackIDs.invoke(null);
 
-        Field packLangField = langSysClass.getDeclaredField("packLanguageEntries");
-        packLangField.setAccessible(true);
+        // Resolve packLanguageEntries with fallback (name stable across 24-26)
+        Field packLangField = resolveField(langSysClass, "packLanguageEntries", Map.class);
+        if (packLangField == null) {
+            LOGGER.warn("[MTSI18n] packLanguageEntries field not found");
+            return;
+        }
         Map<String, Map<String, Object>> packEntries =
             (Map<String, Map<String, Object>>) packLangField.get(null);
 
@@ -128,15 +200,12 @@ public class MTSI18nMod {
         boolean debugKeys = true;
         Set<String> allLangKeys = new LinkedHashSet<>();
 
-        Field cachedValuesField = null;
-        try {
-            cachedValuesField = Class.forName(
-                "minecrafttransportsimulator.systems.LanguageSystem$LanguageEntry"
-            ).getDeclaredField("values");
-            cachedValuesField.setAccessible(true);
-        } catch (Exception ignored) {
+        Field valuesField = tryField(langEntryClass, "values", "cachedValues", "languageValues");
+        if (valuesField == null) {
+            LOGGER.warn("[MTSI18n] LanguageEntry.values field not found");
+            return;
         }
-        final Field valuesFieldRef = cachedValuesField;
+        valuesField.setAccessible(true);
 
         for (String packID : packIDs) {
             Map<String, Object> packMap = packEntries.get(packID);
@@ -148,9 +217,6 @@ public class MTSI18nMod {
                 if (langEntry == null) continue;
 
                 try {
-                    Field valuesField = valuesFieldRef != null ? valuesFieldRef
-                        : langEntry.getClass().getDeclaredField("values");
-                    if (valuesFieldRef == null) valuesField.setAccessible(true);
                     Map<String, String> values = (Map<String, String>) valuesField.get(langEntry);
                     if (values == null) continue;
 
@@ -222,22 +288,34 @@ public class MTSI18nMod {
             Class<?> ajsonItemClass = Class.forName("minecrafttransportsimulator.jsondefs.AJSONItem");
             Class<?> generalClass = Class.forName("minecrafttransportsimulator.jsondefs.AJSONItem$General");
 
-            Field packItemMapField = packParserClass.getDeclaredField("packItemMap");
-            packItemMapField.setAccessible(true);
+            Field packItemMapField = resolveField(packParserClass, "packItemMap", Map.class);
+            if (packItemMapField == null) return -1;
             Object packItemMap = packItemMapField.get(null);
             if (!(packItemMap instanceof Map)) return -1;
 
-            Field definitionField = itemPackClass.getField("definition");
-            Field descField = itemPackClass.getField("languageDescription");
-            Field nameField = itemPackClass.getField("languageName");
-            Field valuesField = langEntryClass.getField("values");
-            Field generalField = ajsonItemClass.getField("general");
-            Field generalDescField = generalClass.getField("description");
-            Field generalNameField = generalClass.getField("name");
+            Field definitionField = tryField(itemPackClass, "definition", "itemDefinition");
+            Field descField = tryField(itemPackClass, "languageDescription", "descriptionEntry");
+            Field nameField = tryField(itemPackClass, "languageName", "nameEntry");
+            Field valuesField = tryField(langEntryClass, "values", "cachedValues", "languageValues");
+            Field generalField = tryField(ajsonItemClass, "general", "itemGeneral");
+            Field generalDescField = tryField(generalClass, "description", "itemDescription");
+            Field generalNameField = tryField(generalClass, "name", "itemName");
 
-            Constructor<?> langEntryCtor = langEntryClass.getDeclaredConstructor(String.class, String.class);
+            if (definitionField == null || descField == null || nameField == null ||
+                valuesField == null || generalField == null || generalDescField == null ||
+                generalNameField == null) {
+                LOGGER.warn("[MTSI18n] injectItemDescriptions: required fields not found, skipping");
+                return -1;
+            }
+
+            Constructor<?> langEntryCtor;
+            try {
+                langEntryCtor = langEntryClass.getDeclaredConstructor(String.class, String.class);
+            } catch (NoSuchMethodException e) {
+                langEntryCtor = langEntryClass.getDeclaredConstructor(String.class);
+            }
             langEntryCtor.setAccessible(true);
-            Field keyField = langEntryClass.getField("key");
+            Field keyField = tryField(langEntryClass, "key", "entryKey");
 
             int translated = 0;
             int totalItems = 0;
@@ -259,7 +337,7 @@ public class MTSI18nMod {
                     Object nameEntry = nameField.get(item);
                     if (rawName != null && !rawName.isEmpty()) {
                         if (nameEntry == null) {
-                            nameEntry = langEntryCtor.newInstance(null, rawName);
+                            nameEntry = newLangEntry(langEntryCtor, null, rawName);
                             nameField.set(item, nameEntry);
                         }
                         Map<String, String> nv = (Map<String, String>) valuesField.get(nameEntry);
@@ -280,7 +358,7 @@ public class MTSI18nMod {
                     Object descEntry = descField.get(item);
                     if (descEntry == null) {
                         String entryKey = nameEntry != null ? (String) keyField.get(nameEntry) : null;
-                        descEntry = langEntryCtor.newInstance(entryKey != null ? entryKey + ".description" : null, rawDesc);
+                        descEntry = newLangEntry(langEntryCtor, entryKey != null ? entryKey + ".description" : null, rawDesc);
                         descField.set(item, descEntry);
                     }
                     Map<String, String> dv = (Map<String, String>) valuesField.get(descEntry);
@@ -306,6 +384,29 @@ public class MTSI18nMod {
         } catch (Exception e) {
             LOGGER.warn("[MTSI18n] injectItemDescriptions error: {}", e.toString());
             return -1;
+        }
+    }
+
+    /** Create a LanguageEntry, compatible with both (String,String) and (String) constructors across IV versions. */
+    private static Object newLangEntry(Constructor<?> ctor, String key, String defaultValue) throws Exception {
+        if (ctor.getParameterCount() == 2) {
+            return ctor.newInstance(key, defaultValue);
+        } else {
+            Object entry = ctor.newInstance(defaultValue);
+            if (key != null) {
+                Field kf = tryField(entry.getClass(), "key", "entryKey");
+                if (kf != null) {
+                    kf.set(entry, key);
+                }
+            }
+            Field vf = tryField(entry.getClass(), "values", "cachedValues", "languageValues");
+            if (vf != null) {
+                Map<String, String> vals = (Map<String, String>) vf.get(entry);
+                if (vals != null && !vals.containsKey("en_us")) {
+                    vals.put("en_us", defaultValue);
+                }
+            }
+            return entry;
         }
     }
 }

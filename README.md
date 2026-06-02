@@ -2,6 +2,7 @@
 
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1.232-blue)](https://neoforged.net/)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)](https://minecraft.net/)
+[![IV](https://img.shields.io/badge/IV-24.0.0–26.1.2+-orange)](https://www.curseforge.com/minecraft/mc-mods/mts-immersive-vehicles)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 Runtime internationalization (i18n) injector for **Immersive Vehicles (MTS/IV)** and its addon content packs.  
@@ -41,7 +42,7 @@ This mod does exactly that: it reads MTS's internal language entries, looks up t
 ## Installation
 
 1. Install [NeoForge](https://neoforged.net/) 21.1.232 for Minecraft 1.21.1
-2. Install [Immersive Vehicles (MTS)](https://www.curseforge.com/minecraft/mc-mods/mts-immersive-vehicles) V24+
+2. Install [Immersive Vehicles (MTS)](https://www.curseforge.com/minecraft/mc-mods/mts-immersive-vehicles) V24.0.0 ~ V26.1.x+
 3. Place `mts_i18n-1.0.0.jar` in your `mods/` folder
 4. Launch the game — translations are applied automatically based on your game language
 

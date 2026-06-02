@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -314,7 +315,22 @@ public class TranslationExtractor {
         java.lang.reflect.Method getAllPackIDs = packParserClass.getMethod("getAllPackIDs");
         java.util.Set<String> packIDs = (java.util.Set<String>) getAllPackIDs.invoke(null);
 
-        java.lang.reflect.Field packLangField = langSysClass.getDeclaredField("packLanguageEntries");
+        java.lang.reflect.Field packLangField = null;
+        try {
+            packLangField = langSysClass.getDeclaredField("packLanguageEntries");
+        } catch (NoSuchFieldException e) {
+            for (java.lang.reflect.Field f : langSysClass.getDeclaredFields()) {
+                if (Map.class.isAssignableFrom(f.getType())) {
+                    packLangField = f;
+                    LOGGER.info("[MTSI18n] extract: packLanguageEntries fallback -> {} (type=Map)", f.getName());
+                    break;
+                }
+            }
+        }
+        if (packLangField == null) {
+            LOGGER.warn("[MTSI18n] extract: packLanguageEntries field not found in LanguageSystem");
+            return 0;
+        }
         packLangField.setAccessible(true);
         Map<String, Map<String, Object>> packEntries =
             (Map<String, Map<String, Object>>) packLangField.get(null);
@@ -336,8 +352,8 @@ public class TranslationExtractor {
                 if (langEntry == null) continue;
 
                 try {
-                    java.lang.reflect.Field valuesField = langEntry.getClass().getDeclaredField("values");
-                    valuesField.setAccessible(true);
+                    Field valuesField = resolveLangEntryValuesField(langEntry);
+                    if (valuesField == null) continue;
                     Map<String, String> values = (Map<String, String>) valuesField.get(langEntry);
                     if (values == null) continue;
 
@@ -643,5 +659,25 @@ public class TranslationExtractor {
             pos++;
         }
         return pos;
+    }
+
+    /** Resolve LanguageEntry.values field with cross-version fallback. */
+    private static Field resolveLangEntryValuesField(Object langEntry) {
+        Class<?> c = langEntry.getClass();
+        try { Field f = c.getDeclaredField("values"); f.setAccessible(true); return f; } catch (NoSuchFieldException e1) {}
+        try { Field f = c.getField("values"); return f; } catch (NoSuchFieldException e2) {}
+        for (Field f : c.getFields()) {
+            if (Map.class.isAssignableFrom(f.getType()) && f.getName().length() > 1) {
+                f.setAccessible(true);
+                return f;
+            }
+        }
+        for (Field f : c.getDeclaredFields()) {
+            if (Map.class.isAssignableFrom(f.getType()) && f.getName().length() > 1) {
+                f.setAccessible(true);
+                return f;
+            }
+        }
+        return null;
     }
 }
