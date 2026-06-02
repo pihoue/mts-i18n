@@ -101,3 +101,8 @@ idea {
         downloadJavadoc = true
     }
 }
+
+// ForgeGradle 6.x compatibility with IntelliJ run configurations
+tasks.register('ideBeforeRun') {
+    // IntelliJ calls this before running client - no-op for FG6
+}
