@@ -43,11 +43,26 @@ public class MTSI18nMod {
                 try {
                     // Detect current game language
                     try {
-                        Minecraft mc = Minecraft.getMinecraft();
-                        if (mc != null && mc.getLanguageManager() != null) {
-                            String code = mc.getLanguageManager().getCurrentLanguage().getCode();
-                            if (code != null && !code.isEmpty()) {
-                                LANG_CODE = code;
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc != null) {
+                            Object opt = mc.options;
+                            if (opt != null) {
+                                String code = null;
+                                try {
+                                    java.lang.reflect.Field langF = opt.getClass().getField("language");
+                                    code = (String) langF.get(opt);
+                                } catch (Exception e2) {
+                                    try {
+                                        java.lang.reflect.Field langF = opt.getClass().getField("languageCode");
+                                        code = (String) langF.get(opt);
+                                    } catch (Exception e3) {
+                                        java.lang.reflect.Method getLangM = opt.getClass().getMethod("getLanguage");
+                                        code = (String) getLangM.invoke(opt);
+                                    }
+                                }
+                                if (code != null && !code.isEmpty()) {
+                                    LANG_CODE = code;
+                                }
                             }
                         }
                     } catch (Exception e) {
@@ -97,7 +112,7 @@ public class MTSI18nMod {
         @SubscribeEvent
         public static void onJoinWorld(EntityJoinLevelEvent event) {
             if (!mtsAvailable) return;
-            if (event.getEntity() != Minecraft.getMinecraft().player) return;
+            if (event.getEntity() != Minecraft.getInstance().player) return;
             int n = injectItemDescriptions();
             if (n > 0) {
                 LOGGER.info("[MTSI18n] Late pass: translated {} item fields", n);
