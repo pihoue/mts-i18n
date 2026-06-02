@@ -1,13 +1,13 @@
 package com.mts.i18n;
 
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.common.NeoForge;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -31,7 +31,7 @@ public class MTSI18nMod {
 
     public MTSI18nMod() {
         LOGGER.info("[MTSI18n] Constructor called");
-        NeoForge.EVENT_BUS.addListener(LateApplicator::onJoinWorld);
+        MinecraftForge.EVENT_BUS.addListener(LateApplicator::onJoinWorld);
     }
 
     @SuppressWarnings("removal")
@@ -43,10 +43,12 @@ public class MTSI18nMod {
                 try {
                     // Detect current game language
                     try {
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.options != null && mc.options.languageCode != null
-                            && !mc.options.languageCode.isEmpty()) {
-                            LANG_CODE = mc.options.languageCode;
+                        Minecraft mc = Minecraft.getMinecraft();
+                        if (mc != null && mc.getLanguageManager() != null) {
+                            String code = mc.getLanguageManager().getCurrentLanguage().getCode();
+                            if (code != null && !code.isEmpty()) {
+                                LANG_CODE = code;
+                            }
                         }
                     } catch (Exception e) {
                         // default to zh_cn
@@ -92,8 +94,10 @@ public class MTSI18nMod {
     }
 
     public static class LateApplicator {
-        public static void onJoinWorld(ClientPlayerNetworkEvent.LoggingIn event) {
+        @SubscribeEvent
+        public static void onJoinWorld(EntityJoinLevelEvent event) {
             if (!mtsAvailable) return;
+            if (event.getEntity() != Minecraft.getMinecraft().player) return;
             int n = injectItemDescriptions();
             if (n > 0) {
                 LOGGER.info("[MTSI18n] Late pass: translated {} item fields", n);
